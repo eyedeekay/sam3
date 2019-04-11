@@ -34,7 +34,7 @@ func (s *SAM) NewDatagramSession(id string, keys I2PKeys, options []string, udpP
 	if udpPort == 0 {
 		udpPort = 7655
 	}
-	lhost, _, err := net.SplitHostPort(s.conn.LocalAddr().String())
+	lhost, _, err := net.SplitHostPort(s.Conn.LocalAddr().String())
 	if err != nil {
 		s.Close()
 		return nil, err
@@ -47,7 +47,7 @@ func (s *SAM) NewDatagramSession(id string, keys I2PKeys, options []string, udpP
 	if err != nil {
 		return nil, err
 	}
-	rhost, _, err := net.SplitHostPort(s.conn.RemoteAddr().String())
+	rhost, _, err := net.SplitHostPort(s.Conn.RemoteAddr().String())
 	if err != nil {
 		s.Close()
 		return nil, err

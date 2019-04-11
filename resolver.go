@@ -34,12 +34,12 @@ func NewFullSAMResolver(address string) (*SAMResolver, error) {
 // Performs a lookup, probably this order: 1) routers known addresses, cached
 // addresses, 3) by asking peers in the I2P network.
 func (sam *SAMResolver) Resolve(name string) (I2PAddr, error) {
-	if _, err := sam.conn.Write([]byte("NAMING LOOKUP NAME=" + name + "\n")); err != nil {
+	if _, err := sam.Conn.Write([]byte("NAMING LOOKUP NAME=" + name + "\n")); err != nil {
 		sam.Close()
 		return I2PAddr(""), err
 	}
 	buf := make([]byte, 4096)
-	n, err := sam.conn.Read(buf)
+	n, err := sam.Conn.Read(buf)
 	if err != nil {
 		sam.Close()
 		return I2PAddr(""), err

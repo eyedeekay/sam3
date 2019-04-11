@@ -19,8 +19,8 @@ import (
 // Used for controlling I2Ps SAMv3.
 type SAM struct {
 	//address  string
-	conn     net.Conn
-	resolver *SAMResolver
+	Conn     net.Conn
+	Resolver *SAMResolver
 	Config   SAMEmit
 }
 
@@ -45,7 +45,8 @@ const (
 func NewSAM(address string) (*SAM, error) {
 	var s SAM
 	// TODO: clean this up
-	conn, err := net.Dial("tcp", address)
+    s.Config.I2PConfig.SetSAMAddress(address)
+	conn, err := net.Dial("tcp", s.Config.I2PConfig.Sam())
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +61,9 @@ func NewSAM(address string) (*SAM, error) {
 		return nil, err
 	}
 	if strings.Contains(string(buf[:n]), "HELLO REPLY RESULT=OK") {
-		s.Config.I2PConfig.SetSAMAddress(address)
-		s.conn = conn
+		s.Conn = conn
 		s.Config.I2PConfig.DestinationKeys = nil
-		s.resolver, err = NewSAMResolver(&s)
+		s.Resolver, err = NewSAMResolver(&s)
 		if err != nil {
 			return nil, err
 		}
@@ -141,11 +141,11 @@ func (sam *SAM) NewKeys(sigType ...string) (I2PKeys, error) {
 	if len(sigType) > 0 {
 		sigtmp = sigType[0]
 	}
-	if _, err := sam.conn.Write([]byte("DEST GENERATE " + sigtmp + "\n")); err != nil {
+	if _, err := sam.Conn.Write([]byte("DEST GENERATE " + sigtmp + "\n")); err != nil {
 		return I2PKeys{}, err
 	}
 	buf := make([]byte, 8192)
-	n, err := sam.conn.Read(buf)
+	n, err := sam.Conn.Read(buf)
 	if err != nil {
 		return I2PKeys{}, err
 	}
@@ -173,7 +173,7 @@ func (sam *SAM) NewKeys(sigType ...string) (I2PKeys, error) {
 // Performs a lookup, probably this order: 1) routers known addresses, cached
 // addresses, 3) by asking peers in the I2P network.
 func (sam *SAM) Lookup(name string) (I2PAddr, error) {
-	return sam.resolver.Resolve(name)
+	return sam.Resolver.Resolve(name)
 }
 
 // Creates a new session with the style of either "STREAM", "DATAGRAM" or "RAW",
@@ -201,7 +201,7 @@ func (sam *SAM) newGenericSessionWithSignatureAndPorts(style, id, from, to strin
 		optStr += opt + " "
 	}
 
-	conn := sam.conn
+	conn := sam.Conn
 	scmsg := []byte("SESSION CREATE STYLE=" + style + " FROM_PORT=" + from + " TO_PORT=" + to + " ID=" + id + " DESTINATION=" + keys.String() + " " + sigType + " " + optStr + strings.Join(extras, " ") + "\n")
 	for m, i := 0, 0; m != len(scmsg); i++ {
 		if i == 15 {
@@ -248,5 +248,5 @@ func (sam *SAM) newGenericSessionWithSignatureAndPorts(style, id, from, to strin
 
 // close this sam session
 func (sam *SAM) Close() error {
-	return sam.conn.Close()
+	return sam.Conn.Close()
 }
