@@ -13,6 +13,7 @@ import (
 
 import (
 	. "github.com/eyedeekay/ramp/emit"
+    "github.com/eyedeekay/ramp/config"
 	. "github.com/eyedeekay/sam3/i2pkeys"
 )
 
@@ -196,13 +197,11 @@ func (sam *SAM) newGenericSessionWithSignature(style, id string, keys I2PKeys, s
 // This sam3 instance is now a session
 func (sam *SAM) newGenericSessionWithSignatureAndPorts(style, id, from, to string, keys I2PKeys, sigType string, options []string, extras []string) (net.Conn, error) {
 
-	optStr := ""
-	for _, opt := range options {
-		optStr += opt + " "
-	}
+    conf, _ := i2pconfig.ConstructEqualsConfig(options)
+	sam.Config.I2PConfig = *conf
 
 	conn := sam.Conn
-	scmsg := []byte("SESSION CREATE STYLE=" + style + " FROM_PORT=" + from + " TO_PORT=" + to + " ID=" + id + " DESTINATION=" + keys.String() + " " + sigType + " " + optStr + strings.Join(extras, " ") + "\n")
+	scmsg := []byte("SESSION CREATE STYLE=" + style + " FROM_PORT=" + from + " TO_PORT=" + to + " ID=" + id + " DESTINATION=" + keys.String() + " " + sigType + " " + sam.Config.OptStr() + strings.Join(extras, " ") + "\n")
 	for m, i := 0, 0; m != len(scmsg); i++ {
 		if i == 15 {
 			conn.Close()
