@@ -53,8 +53,8 @@ func Test_DatagramServerClient(t *testing.T) {
 			return
 		}
 		defer ds2.Close()
-		fmt.Println("\tClient: Servers address: " + ds.B32())  // ().Base32())
-		fmt.Println("\tClient: Clients address: " + ds2.B32()) //LocalAddr().Base32())
+		fmt.Println("\tClient: Servers address: " + ds.B32())
+		fmt.Println("\tClient: Clients address: " + ds2.B32())
 		fmt.Println("\tClient: Tries to send datagram to server")
 		for {
 			select {

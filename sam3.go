@@ -47,6 +47,7 @@ func NewSAM(address string) (*SAM, error) {
 	var s SAM
 	// TODO: clean this up
 	s.Config.I2PConfig.SetSAMAddress(address)
+    s.Config.SamMax = "3.2"
 	conn, err := net.Dial("tcp", s.Config.I2PConfig.Sam())
 	if err != nil {
 		return nil, err
@@ -200,7 +201,7 @@ func (sam *SAM) newGenericSessionWithSignature(style, id string, keys I2PKeys, s
 	sam.Config.TunName = id
 
 	conn := sam.Conn
-	scmsg := []byte("SESSION CREATE " + sam.Config.SessionStyle() + sam.Config.FromPort() + sam.Config.ToPort() + sam.Config.ID() + sam.Config.DestinationKey() + sam.Config.SignatureType() + sam.Config.OptStr() + strings.Join(extras, " ") + "\n")
+	scmsg := []byte("SESSION CREATE " + sam.Config.SessionStyle() +  sam.Config.ID() + sam.Config.DestinationKey() + sam.Config.SignatureType() + sam.Config.FromPort() + sam.Config.ToPort() + sam.Config.OptStr() + strings.Join(extras, " ") + "\n")
 	for m, i := 0, 0; m != len(scmsg); i++ {
 		if i == 15 {
 			conn.Close()

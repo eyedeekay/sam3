@@ -87,13 +87,13 @@ func (s *DatagramSession) ReadFrom(b []byte) (n int, addr net.Addr, err error) {
 		}
 		break
 	}
-	i := bytes.IndexByte(buf, byte('\n'))
+	i := bytes.IndexByte(buf, byte(' '))
 	if i > 4096 || i > n {
 		return 0, I2PAddr(""), errors.New("Could not parse incomming message remote address.")
 	}
 	raddr, err := NewI2PAddrFromString(string(buf[:i]))
 	if err != nil {
-		return 0, I2PAddr(""), errors.New("Could not parse incomming message remote address: " + err.Error())
+		return 0, I2PAddr(""), errors.New("Could not parse incomming message remote address: " + string(buf[:i]) + err.Error())
 	}
 	// shift out the incomming address to contain only the data received
 	if (n - i + 1) > len(b) {
