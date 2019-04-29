@@ -12,8 +12,8 @@ import (
 )
 
 import (
+	"github.com/eyedeekay/ramp/config"
 	. "github.com/eyedeekay/ramp/emit"
-    "github.com/eyedeekay/ramp/config"
 	. "github.com/eyedeekay/sam3/i2pkeys"
 )
 
@@ -46,12 +46,12 @@ const (
 func NewSAM(address string) (*SAM, error) {
 	var s SAM
 	// TODO: clean this up
-    s.Config.I2PConfig.SetSAMAddress(address)
+	s.Config.I2PConfig.SetSAMAddress(address)
 	conn, err := net.Dial("tcp", s.Config.I2PConfig.Sam())
 	if err != nil {
 		return nil, err
 	}
-    if _, err := conn.Write(s.Config.HelloBytes()); err != nil {
+	if _, err := conn.Write(s.Config.HelloBytes()); err != nil {
 		conn.Close()
 		return nil, err
 	}
@@ -186,22 +186,17 @@ func (sam *SAM) newGenericSession(style, id string, keys I2PKeys, options []stri
 	return sam.newGenericSessionWithSignature(style, id, keys, Sig_NONE, options, extras)
 }
 
-func (sam *SAM) newGenericSessionWithSignature(style, id string, keys I2PKeys, sigType string, options []string, extras []string) (net.Conn, error) {
-	return sam.newGenericSessionWithSignatureAndPorts(style, id, "0", "0", keys, sigType, options, extras)
-}
-
 // Creates a new session with the style of either "STREAM", "DATAGRAM" or "RAW",
 // for a new I2P tunnel with name id, using the cypher keys specified, with the
 // I2CP/streaminglib-options as specified. Extra arguments can be specified by
 // setting extra to something else than []string{}.
 // This sam3 instance is now a session
-func (sam *SAM) newGenericSessionWithSignatureAndPorts(style, id, from, to string, keys I2PKeys, sigType string, options []string, extras []string) (net.Conn, error) {
-
-    conf, _ := i2pconfig.ConstructEqualsConfig(options)
+func (sam *SAM) newGenericSessionWithSignature(style, id string, keys I2PKeys, sigType string, options []string, extras []string) (net.Conn, error) {
+	conf, _ := i2pconfig.ConstructEqualsConfig(options)
 	sam.Config.I2PConfig = *conf
 
 	conn := sam.Conn
-	scmsg := []byte("SESSION CREATE STYLE=" + style + " FROM_PORT=" + from + " TO_PORT=" + to + " ID=" + id + " DESTINATION=" + keys.String() + " " + sigType + " " + sam.Config.OptStr() + strings.Join(extras, " ") + "\n")
+	scmsg := []byte("SESSION CREATE STYLE=" + style + sam.Config.FromPort() + sam.Config.ToPort() + " ID=" + id + " DESTINATION=" + keys.String() + " " + sigType + " " + sam.Config.OptStr() + strings.Join(extras, " ") + "\n")
 	for m, i := 0, 0; m != len(scmsg); i++ {
 		if i == 15 {
 			conn.Close()

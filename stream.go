@@ -83,12 +83,12 @@ func (sam *SAM) NewStreamSessionWithSignature(id string, keys I2PKeys, options [
 
 // Creates a new StreamSession with the I2CP- and streaminglib options as
 // specified. See the I2P documentation for a full list of options.
-func (sam *SAM) NewStreamSessionWithSignatureAndPorts(id, from, to string, keys I2PKeys, options []string, sigType string) (*StreamSession, error) {
-	conn, err := sam.newGenericSessionWithSignatureAndPorts("STREAM", id, from, to, keys, sigType, options, []string{})
+func (sam *SAM) NewStreamSessionWithSignatureAndPorts(id string, keys I2PKeys, options []string, sigType string) (*StreamSession, error) {
+	conn, err := sam.newGenericSessionWithSignature("STREAM", id, keys, sigType, options, []string{})
 	if err != nil {
 		return nil, err
 	}
-	return &StreamSession{sam.Config.I2PConfig.Sam(), id, conn, keys, time.Duration(600 * time.Second), time.Now(), sigType, from, to}, nil
+	return &StreamSession{sam.Config.I2PConfig.Sam(), id, conn, keys, time.Duration(600 * time.Second), time.Now(), sigType, sam.Config.Fromport, sam.Config.Toport}, nil
 }
 
 // lookup name, convienence function
