@@ -194,10 +194,10 @@ func (sam *SAM) newGenericSession(style, id string, keys I2PKeys, options []stri
 func (sam *SAM) newGenericSessionWithSignature(style, id string, keys I2PKeys, sigType string, options []string, extras []string) (net.Conn, error) {
 	conf, _ := i2pconfig.ConstructEqualsConfig(append(options))
 	sam.Config.I2PConfig = *conf
-    sam.Config.SigType = sigType
-    sam.Config.Style = style
-    sam.Config.DestinationKeys = keys
-    sam.Config.TunName = id
+	sam.Config.SigType = sigType
+	sam.Config.Style = style
+	sam.Config.DestinationKeys = keys
+	sam.Config.TunName = id
 
 	conn := sam.Conn
 	scmsg := []byte("SESSION CREATE " + sam.Config.SessionStyle() + sam.Config.FromPort() + sam.Config.ToPort() + sam.Config.ID() + sam.Config.DestinationKey() + sam.Config.SignatureType() + sam.Config.OptStr() + strings.Join(extras, " ") + "\n")
