@@ -21,6 +21,8 @@ var (
 	i2pB32enc *base32.Encoding = base32.NewEncoding("abcdefghijklmnopqrstuvwxyz234567")
 )
 
+var FakePort = false
+
 // The public and private keys associated with an I2P destination. I2P hides the
 // details of exactly what this is, so treat them as blobs, but generally: One
 // pair of DSA keys, one pair of ElGamal keys, and sometimes (almost never) also
@@ -279,7 +281,14 @@ func (addr I2PAddr) Bytes() []byte {
 // performing a Lookup(). Lookup only works if you are using the I2PAddr from
 // which the b32 address was generated.
 func (addr I2PAddr) Base32() (str string) {
-	return addr.DestHash().String()
+	return addr.DestHash().String() + addr.Port()
+}
+
+func (addr I2PAddr) Port() (str string) {
+	if FakePort {
+		return ":8080"
+	}
+	return ""
 }
 
 func (addr I2PAddr) DestHash() (h I2PDestHash) {

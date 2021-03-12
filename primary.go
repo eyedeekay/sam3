@@ -33,8 +33,8 @@ type PrimarySession struct {
 	Deadline time.Time
 	sigType  string
 	Config   SAMEmit
-	stsess   map[string]*StreamSession
-	dgsess   map[string]*DatagramSession
+	stsess   *StreamSession
+	dgsess   *DatagramSession
 	//	from     string
 	//	to       string
 }
@@ -62,10 +62,12 @@ func (ss *PrimarySession) Close() error {
 
 // Returns the I2P destination (the address) of the stream session
 func (ss *PrimarySession) Addr() i2pkeys.I2PAddr {
+	//	fmt.Println("LOCAL ADDR")
 	return ss.keys.Addr()
 }
 
 func (ss *PrimarySession) LocalAddr() net.Addr {
+	//	fmt.Println("LOCAL ADDR")
 	aa := ss.keys.Addr()
 	return &aa
 }
@@ -87,58 +89,58 @@ func (sam *PrimarySession) Dial(network, addr string) (net.Conn, error) {
 
 // DialTCP implements x/dialer
 func (sam *PrimarySession) DialTCP(network string, laddr, raddr net.Addr) (net.Conn, error) {
-	_, ok := sam.stsess[network+raddr.String()[0:4]]
-	if !ok {
-		stsess, err := sam.NewUniqueStreamSubSession(network + raddr.String()[0:4])
+	var err error
+	if sam.stsess == nil {
+		sam.stsess, err = sam.NewUniqueStreamSubSession(network + RandString())
 		if err != nil {
 			return nil, err
 		}
-		sam.stsess[network+raddr.String()[0:4]] = stsess
 	}
-	return sam.stsess[network+raddr.String()[0:4]].Dial(network, raddr.String())
+	return sam.stsess.Dial(network, raddr.String())
 }
 
-func (sam *PrimarySession) DialTCPI2P(network string, laddr, raddr string) (net.Conn, error) {
-	_, ok := sam.stsess[network+raddr[0:4]]
-	if !ok {
-		stsess, err := sam.NewUniqueStreamSubSession(network + laddr)
+func (sam *PrimarySession) DialTCPI2P(network string, laddr, raddr string) (*SAMConn, error) {
+	var err error
+	if sam.stsess == nil {
+		sam.stsess, err = sam.NewUniqueStreamSubSession(network + RandString())
 		if err != nil {
 			return nil, err
 		}
-		sam.stsess[network+raddr[0:4]] = stsess
 	}
-	return sam.stsess[network+raddr[0:4]].Dial(network, raddr)
+	c, err := sam.stsess.Dial(network, raddr)
+	if err != nil {
+		return nil, err
+	}
+	return c.(*SAMConn), nil
 }
 
 // DialUDP implements x/dialer
 func (sam *PrimarySession) DialUDP(network string, laddr, raddr net.Addr) (net.PacketConn, error) {
-	_, ok := sam.dgsess[network+raddr.String()[0:4]]
-	if !ok {
-		dgsess, err := sam.NewDatagramSubSession(network+raddr.String()[0:4], 0)
+	var err error
+	if sam.dgsess == nil {
+		sam.dgsess, err = sam.NewDatagramSubSession(network+raddr.String()[0:4], 0)
 		if err != nil {
 			return nil, err
 		}
-		sam.dgsess[network+raddr.String()[0:4]] = dgsess
 	}
-	return sam.dgsess[network+raddr.String()[0:4]].Dial(network, raddr.String())
+	return sam.dgsess.Dial(network, raddr.String())
 }
 
 func (sam *PrimarySession) DialUDPI2P(network, laddr, raddr string) (*DatagramSession, error) {
-	_, ok := sam.dgsess[network+raddr[0:4]]
-	if !ok {
-		dgsess, err := sam.NewDatagramSubSession(network+laddr, 0)
+	var err error
+	if sam.dgsess == nil {
+		sam.dgsess, err = sam.NewDatagramSubSession(network+raddr[0:4], 0)
 		if err != nil {
 			return nil, err
 		}
-		sam.dgsess[network+raddr[0:4]] = dgsess
 	}
-	return sam.dgsess[network+raddr[0:4]].Dial(network, raddr)
+	return sam.dgsess.Dial(network, raddr)
 }
 
 func (s *PrimarySession) Lookup(name string) (a net.Addr, err error) {
 	var sam *SAM
 	if len(strings.Split(name, ":")) <= 1 {
-		name += ":0"
+		name += ":80"
 	}
 	sam, err = NewSAM(s.samAddr)
 	if err == nil {
@@ -149,14 +151,17 @@ func (s *PrimarySession) Lookup(name string) (a net.Addr, err error) {
 }
 
 func (sam *PrimarySession) Resolve(network, addr string) (net.Addr, error) {
+	fmt.Println("LOGGING RESOLUTION", network, addr)
 	return sam.Lookup(addr)
 }
 
 func (sam *PrimarySession) ResolveTCPAddr(network, dest string) (net.Addr, error) {
+	fmt.Println("LOGGING RESOLUTION", network, dest)
 	return sam.Lookup(dest)
 }
 
 func (sam *PrimarySession) ResolveUDPAddr(network, dest string) (net.Addr, error) {
+	fmt.Println("LOGGING RESOLUTION", network, dest)
 	return sam.Lookup(dest)
 }
 
@@ -167,9 +172,7 @@ func (sam *SAM) NewPrimarySession(id string, keys i2pkeys.I2PKeys, options []str
 	if err != nil {
 		return nil, err
 	}
-	ssesss := make(map[string]*StreamSession)
-	dsesss := make(map[string]*DatagramSession)
-	return &PrimarySession{sam.Config.I2PConfig.Sam(), id, conn, keys, time.Duration(600 * time.Second), time.Now(), Sig_NONE, sam.Config, ssesss, dsesss}, nil
+	return &PrimarySession{sam.Config.I2PConfig.Sam(), id, conn, keys, time.Duration(600 * time.Second), time.Now(), Sig_NONE, sam.Config, nil, nil}, nil
 }
 
 // Creates a new PrimarySession with the I2CP- and PRIMARYinglib options as
@@ -179,9 +182,7 @@ func (sam *SAM) NewPrimarySessionWithSignature(id string, keys i2pkeys.I2PKeys, 
 	if err != nil {
 		return nil, err
 	}
-	ssesss := make(map[string]*StreamSession)
-	dsesss := make(map[string]*DatagramSession)
-	return &PrimarySession{sam.Config.I2PConfig.Sam(), id, conn, keys, time.Duration(600 * time.Second), time.Now(), sigType, sam.Config, ssesss, dsesss}, nil
+	return &PrimarySession{sam.Config.I2PConfig.Sam(), id, conn, keys, time.Duration(600 * time.Second), time.Now(), sigType, sam.Config, nil, nil}, nil
 }
 
 // Creates a new session with the style of either "STREAM", "DATAGRAM" or "RAW",
@@ -260,21 +261,23 @@ func (sam *PrimarySession) newGenericSubSessionWithSignatureAndPorts(style, id, 
 // Creates a new StreamSession with the I2CP- and streaminglib options as
 // specified. See the I2P documentation for a full list of options.
 func (sam *PrimarySession) NewStreamSubSession(id string) (*StreamSession, error) {
-	conn, err := sam.newGenericSubSession("STREAM", id, []string{})
+	s := RandString()
+	conn, err := sam.newGenericSubSession("STREAM", id+s, []string{})
 	if err != nil {
 		return nil, err
 	}
-	return &StreamSession{sam.Config.I2PConfig.Sam(), id, conn, sam.keys, time.Duration(600 * time.Second), time.Now(), Sig_NONE, "0", "0"}, nil
+	return &StreamSession{sam.Config.I2PConfig.Sam(), id + s, conn, sam.keys, time.Duration(600 * time.Second), time.Now(), Sig_NONE, "0", "0"}, nil
 }
 
 // Creates a new StreamSession with the I2CP- and streaminglib options as
 // specified. See the I2P documentation for a full list of options.
 func (sam *PrimarySession) NewUniqueStreamSubSession(id string) (*StreamSession, error) {
-	conn, err := sam.newGenericSubSession("STREAM", id, []string{})
+	s := RandString()
+	conn, err := sam.newGenericSubSession("STREAM", id+s, []string{})
 	if err != nil {
 		return nil, err
 	}
-	return &StreamSession{sam.Config.I2PConfig.Sam(), id, conn, sam.keys, time.Duration(600 * time.Second), time.Now(), Sig_NONE, randport(), "0"}, nil
+	return &StreamSession{sam.Config.I2PConfig.Sam(), id + s, conn, sam.keys, time.Duration(600 * time.Second), time.Now(), Sig_NONE, randport(), "0"}, nil
 }
 
 // Creates a new StreamSession with the I2CP- and streaminglib options as
