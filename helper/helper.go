@@ -27,12 +27,6 @@ func I2PListener(name, samaddr, keyspath string) (*sam3.StreamListener, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error storing I2P base32 address in adjacent text file, %s", err)
 		}
-	} else {
-		tkeys, err := sam.NewKeys()
-		if err != nil {
-			return nil, fmt.Errorf("unable to generate I2P Keys, %s", err)
-		}
-		keys = &tkeys
 	}
 	return listener.Listen() //, err
 }
